@@ -23,22 +23,19 @@ impl Game {
             for j in 0..8 {
                 if i < 2 {
                     board[i].push(BoardLocation {
-                        x: i as u8,
-                        y: j as u8,
+                        coords: LocationCoords { x: i, y: j },
                         state: LocationState::Occupied,
                         piece: Some(Rc::clone(&player2.pieces.borrow()[i * 7 + 1])),
                     })
                 } else if i >= 2 && i < 6 {
                     board[i].push(BoardLocation {
-                        x: i as u8,
-                        y: j as u8,
+                        coords: LocationCoords { x: i, y: j },
                         state: LocationState::Empty,
                         piece: None,
                     });
                 } else {
                     board[i].push(BoardLocation {
-                        x: i as u8,
-                        y: j as u8,
+                        coords: LocationCoords { x: i, y: j },
                         state: LocationState::Occupied,
                         piece: Some(Rc::clone(&player1.pieces.borrow()[(i - 6) * 7 + 1])),
                     })
@@ -58,12 +55,12 @@ impl Game {
 
     fn run(&mut self) {}
 
-    fn move_piece(&mut self, source: (usize, usize), dest: (usize, usize)) {
+    fn move_piece(&mut self, source: LocationCoords, dest: LocationCoords) {
         let mut successful_move = false;
 
-        match self.board[source.0][source.1].state {
+        match self.board[source.x][source.y].state {
             LocationState::Occupied => {
-                if let Some(piece) = &self.board[source.0][source.1].piece {
+                if let Some(piece) = &self.board[source.x][source.y].piece {
                     println!("FOUND THE PIECE");
                     println!("{:?}", piece);
 
@@ -73,7 +70,7 @@ impl Game {
                         return;
                     }
                     // Validate piece move
-                    piece.validate_move(source, dest);
+                    piece.validate_move(&source, &dest);
 
                     // Reconcile attack / move
 
@@ -122,10 +119,15 @@ impl fmt::Display for Game {
 
 #[derive(Debug)]
 struct BoardLocation {
-    x: u8,
-    y: u8,
+    coords: LocationCoords,
     state: LocationState,
     piece: Option<Rc<Piece>>,
+}
+
+#[derive(Debug)]
+struct LocationCoords {
+    x: usize,
+    y: usize,
 }
 
 #[derive(Debug)]
@@ -147,7 +149,7 @@ impl Player {
     fn new(name: &str, color: Color) -> Self {
         let pieces: Vec<Rc<Piece>> = vec![];
         let dead_pieces: Vec<Rc<Piece>> = vec![];
-        let mut pawn_direction: i8;
+        let pawn_direction: i8;
 
         match color {
             Color::White => pawn_direction = 1,
@@ -188,7 +190,7 @@ struct Piece {
 }
 
 impl Piece {
-    fn validate_move(&self, source: (usize, usize), dest: (usize, usize)) {
+    fn validate_move(&self, source: &LocationCoords, dest: &LocationCoords) {
         match self.piece_type {
             PieceType::Pawn => {
                 println!("DO PAWN MOVE");
@@ -246,9 +248,9 @@ fn main() {
 
     println!("{}", &game);
 
-    game.move_piece((6, 1), (5, 1));
-    game.move_piece((1, 1), (2, 1));
-    game.move_piece((6, 1), (5, 1));
-    game.move_piece((6, 1), (5, 1));
-    game.move_piece((1, 1), (2, 1));
+    game.move_piece(LocationCoords { x: 6, y: 1 }, LocationCoords { x: 5, y: 1 });
+    game.move_piece(LocationCoords { x: 1, y: 1 }, LocationCoords { x: 2, y: 1 });
+    game.move_piece(LocationCoords { x: 6, y: 1 }, LocationCoords { x: 5, y: 1 });
+    game.move_piece(LocationCoords { x: 6, y: 1 }, LocationCoords { x: 5, y: 1 });
+    game.move_piece(LocationCoords { x: 1, y: 1 }, LocationCoords { x: 2, y: 1 });
 }
