@@ -159,11 +159,11 @@ impl Player {
 
         match color {
             Color::White => {
-                pawn_direction = 1;
+                pawn_direction = -1;
                 piece_char = 'O';
             }
             Color::Black => {
-                pawn_direction = -1;
+                pawn_direction = 1;
                 piece_char = 'X';
             }
         }
