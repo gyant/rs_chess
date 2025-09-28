@@ -104,7 +104,11 @@ impl fmt::Display for Game {
             for column in row {
                 match column.state {
                     LocationState::Empty => text.push_str("_"),
-                    _ => text.push_str("X"),
+                    _ => {
+                        if let Some(p) = &column.piece {
+                            text.push(p.owner.piece_char);
+                        }
+                    }
                 };
             }
 
@@ -143,6 +147,7 @@ struct Player {
     dead_pieces: RefCell<Vec<Rc<Piece>>>,
     color: Color,
     pawn_direction: i8,
+    piece_char: char,
 }
 
 impl Player {
@@ -150,10 +155,17 @@ impl Player {
         let pieces: Vec<Rc<Piece>> = vec![];
         let dead_pieces: Vec<Rc<Piece>> = vec![];
         let pawn_direction: i8;
+        let piece_char: char;
 
         match color {
-            Color::White => pawn_direction = 1,
-            Color::Black => pawn_direction = -1,
+            Color::White => {
+                pawn_direction = 1;
+                piece_char = 'O';
+            }
+            Color::Black => {
+                pawn_direction = -1;
+                piece_char = 'X';
+            }
         }
 
         let player = Player {
@@ -162,6 +174,7 @@ impl Player {
             dead_pieces: RefCell::new(dead_pieces),
             color,
             pawn_direction,
+            piece_char,
         };
 
         player
