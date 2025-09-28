@@ -53,7 +53,7 @@ impl Game {
         }
     }
 
-    fn run(&mut self) {}
+    //fn run(&mut self) {}
 
     fn move_piece(&mut self, source: LocationCoords, dest: LocationCoords) {
         let mut successful_move = false;
