@@ -58,7 +58,9 @@ impl Game {
 
     fn run(&mut self) {}
 
-    fn move_piece(&self, source: (usize, usize), dest: (usize, usize)) {
+    fn move_piece(&mut self, source: (usize, usize), dest: (usize, usize)) {
+        let mut successful_move = false;
+
         match self.board[source.0][source.1].state {
             LocationState::Occupied => {
                 if let Some(piece) = &self.board[source.0][source.1].piece {
@@ -75,6 +77,7 @@ impl Game {
 
                             // Reconcile attack / move
                             println!("MOVE THE PAWN");
+                            successful_move = true;
                         }
                         _ => {
                             println!("NOT YET IMPLEMENTED");
@@ -85,6 +88,18 @@ impl Game {
             _ => {
                 println!("EMPTY NOTHING TO DO");
             }
+        }
+
+        if successful_move {
+            self.switch_turns();
+        }
+    }
+
+    fn switch_turns(&mut self) {
+        if self.current_player.name == self.player1.name {
+            self.current_player = Rc::clone(&self.player2);
+        } else {
+            self.current_player = Rc::clone(&self.player1);
         }
     }
 }
@@ -203,6 +218,9 @@ fn main() {
 
     println!("{}", &game);
 
+    game.move_piece((6, 1), (5, 1));
+    game.move_piece((1, 1), (2, 1));
+    game.move_piece((6, 1), (5, 1));
     game.move_piece((6, 1), (5, 1));
     game.move_piece((1, 1), (2, 1));
 }
