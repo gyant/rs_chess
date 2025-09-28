@@ -26,7 +26,7 @@ impl Game {
                         x: i as u8,
                         y: j as u8,
                         state: LocationState::Occupied,
-                        piece: Some(Rc::clone(&player1.pieces.borrow()[i * 7 + 1])),
+                        piece: Some(Rc::clone(&player2.pieces.borrow()[i * 7 + 1])),
                     })
                 } else if i >= 2 && i < 6 {
                     board[i].push(BoardLocation {
@@ -40,7 +40,7 @@ impl Game {
                         x: i as u8,
                         y: j as u8,
                         state: LocationState::Occupied,
-                        piece: Some(Rc::clone(&player2.pieces.borrow()[(i - 6) * 7 + 1])),
+                        piece: Some(Rc::clone(&player1.pieces.borrow()[(i - 6) * 7 + 1])),
                     })
                 }
             }
@@ -66,23 +66,18 @@ impl Game {
                 if let Some(piece) = &self.board[source.0][source.1].piece {
                     println!("FOUND THE PIECE");
                     println!("{:?}", piece);
-                    match piece.piece_type {
-                        PieceType::Pawn => {
-                            // Verify ownership
-                            if piece.owner.name != self.current_player.name {
-                                println!("YOU DO NOT OWN THIS PIECE");
-                                return;
-                            }
-                            // Validate piece move
 
-                            // Reconcile attack / move
-                            println!("MOVE THE PAWN");
-                            successful_move = true;
-                        }
-                        _ => {
-                            println!("NOT YET IMPLEMENTED");
-                        }
+                    // Verify ownership
+                    if piece.owner.name != self.current_player.name {
+                        println!("YOU DO NOT OWN THIS PIECE");
+                        return;
                     }
+                    // Validate piece move
+                    piece.validate_move(source, dest);
+
+                    // Reconcile attack / move
+
+                    successful_move = true;
                 }
             }
             _ => {
@@ -145,18 +140,26 @@ struct Player {
     pieces: RefCell<Vec<Rc<Piece>>>,
     dead_pieces: RefCell<Vec<Rc<Piece>>>,
     color: Color,
+    pawn_direction: i8,
 }
 
 impl Player {
     fn new(name: &str, color: Color) -> Self {
         let pieces: Vec<Rc<Piece>> = vec![];
         let dead_pieces: Vec<Rc<Piece>> = vec![];
+        let mut pawn_direction: i8;
+
+        match color {
+            Color::White => pawn_direction = 1,
+            Color::Black => pawn_direction = -1,
+        }
 
         let player = Player {
             name: name.to_string(),
             pieces: RefCell::new(pieces),
             dead_pieces: RefCell::new(dead_pieces),
             color,
+            pawn_direction,
         };
 
         player
@@ -182,6 +185,31 @@ impl Player {
 struct Piece {
     piece_type: PieceType,
     owner: Rc<Player>,
+}
+
+impl Piece {
+    fn validate_move(&self, source: (usize, usize), dest: (usize, usize)) {
+        match self.piece_type {
+            PieceType::Pawn => {
+                println!("DO PAWN MOVE");
+            }
+            PieceType::Rook => {
+                println!("DO ROOK MOVE");
+            }
+            PieceType::Knight => {
+                println!("DO KNIGHT MOVE");
+            }
+            PieceType::Bishop => {
+                println!("DO BISHOP MOVE");
+            }
+            PieceType::Queen => {
+                println!("DO QUEEN MOVE");
+            }
+            PieceType::King => {
+                println!("DO KING MOVE");
+            }
+        }
+    }
 }
 
 impl fmt::Debug for Piece {
