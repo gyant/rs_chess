@@ -210,8 +210,8 @@ enum PieceType {
 }
 
 fn main() {
-    let player1 = Player::with_rc("bob", Color::Black);
-    let player2 = Player::with_rc("alice", Color::White);
+    let player1 = Player::with_rc("bob", Color::White);
+    let player2 = Player::with_rc("alice", Color::Black);
 
     let mut game = Game::new(player1, player2);
     println!("{:#?}", &game);
