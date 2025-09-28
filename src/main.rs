@@ -66,10 +66,11 @@ impl Game {
                     println!("{:?}", piece);
                     match piece.piece_type {
                         PieceType::Pawn => {
-                            // Check source position
-
                             // Verify ownership
-
+                            if piece.owner.name != self.current_player.name {
+                                println!("YOU DO NOT OWN THIS PIECE");
+                                return;
+                            }
                             // Validate piece move
 
                             // Reconcile attack / move
@@ -203,4 +204,5 @@ fn main() {
     println!("{}", &game);
 
     game.move_piece((6, 1), (5, 1));
+    game.move_piece((1, 1), (2, 1));
 }
