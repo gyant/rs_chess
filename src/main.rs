@@ -73,16 +73,30 @@ impl Game {
                         println!("YOU DO NOT OWN THIS PIECE");
                         return;
                     }
-                    // Validate piece move
-                    if piece.validate_move(&source, &dest) {
-                        successful_move = true;
-                        piece_clone = Some(Rc::clone(&piece));
-                    } else {
-                        println!("NOT A VALID MOVE FOR {:?}", piece);
-                        return;
+
+                    match self.get_loc_cartesian(&dest).state {
+                        LocationState::Occupied => {
+                            if let Some(o) = &self.get_loc_cartesian(&dest).piece {
+                                if o.owner.name == piece.owner.name {
+                                    println!("FRIENDLY FIRE!");
+                                    return;
+                                }
+                            } else {
+                                // Reconcile attack / move
+                            }
+                        }
+                        _ => {
+                            // Validate piece move
+                            if !piece.validate_move(&source, &dest) {
+                                println!("NOT A VALID MOVE FOR {:?}", piece);
+                                return;
+                            }
+                        }
                     }
 
-                    // Reconcile attack / move
+                    // Mark success
+                    successful_move = true;
+                    piece_clone = Some(Rc::clone(&piece));
                 }
             }
             _ => {
