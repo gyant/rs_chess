@@ -23,19 +23,19 @@ impl Game {
             for j in 0..8 {
                 if i < 2 {
                     board[i].push(BoardLocation {
-                        coords: LocationCoords { x: i, y: j },
+                        coords: LocationCoords { x: j, y: i },
                         state: LocationState::Occupied,
                         piece: Some(Rc::clone(&player2.pieces.borrow()[i * 7 + 1])),
                     })
                 } else if i >= 2 && i < 6 {
                     board[i].push(BoardLocation {
-                        coords: LocationCoords { x: i, y: j },
+                        coords: LocationCoords { x: j, y: i },
                         state: LocationState::Empty,
                         piece: None,
                     });
                 } else {
                     board[i].push(BoardLocation {
-                        coords: LocationCoords { x: i, y: j },
+                        coords: LocationCoords { x: j, y: i },
                         state: LocationState::Occupied,
                         piece: Some(Rc::clone(&player1.pieces.borrow()[(i - 6) * 7 + 1])),
                     })
@@ -53,14 +53,18 @@ impl Game {
         }
     }
 
+    fn get_loc_cartesian(&self, location: &LocationCoords) -> &BoardLocation {
+        &self.board[location.y][location.x]
+    }
     //fn run(&mut self) {}
 
     fn move_piece(&mut self, source: LocationCoords, dest: LocationCoords) {
         let mut successful_move = false;
+        let mut piece_clone: Option<Rc<Piece>> = None;
 
-        match self.board[source.x][source.y].state {
+        match self.board[source.y][source.x].state {
             LocationState::Occupied => {
-                if let Some(piece) = &self.board[source.x][source.y].piece {
+                if let Some(piece) = &self.board[source.y][source.x].piece {
                     println!("FOUND THE PIECE");
                     println!("{:?}", piece);
 
@@ -70,19 +74,38 @@ impl Game {
                         return;
                     }
                     // Validate piece move
-                    piece.validate_move(&source, &dest);
+                    if piece.validate_move(&source, &dest) {
+                        successful_move = true;
+                        piece_clone = Some(Rc::clone(&piece));
+                    } else {
+                        println!("NOT A VALID MOVE FOR {:?}", piece);
+                        return;
+                    }
 
                     // Reconcile attack / move
-
-                    successful_move = true;
                 }
             }
             _ => {
                 println!("EMPTY NOTHING TO DO");
+                return;
             }
         }
 
         if successful_move {
+            {
+                let source_board = &mut self.board[source.y][source.x];
+
+                source_board.piece = None;
+                source_board.state = LocationState::Empty;
+            }
+
+            {
+                let dest_board = &mut self.board[dest.y][dest.x];
+
+                dest_board.piece = piece_clone;
+                dest_board.state = LocationState::Occupied;
+            }
+
             self.switch_turns();
         }
     }
@@ -146,7 +169,7 @@ struct Player {
     pieces: RefCell<Vec<Rc<Piece>>>,
     dead_pieces: RefCell<Vec<Rc<Piece>>>,
     color: Color,
-    pawn_direction: i8,
+    pawn_direction: i64,
     piece_char: char,
 }
 
@@ -154,7 +177,7 @@ impl Player {
     fn new(name: &str, color: Color) -> Self {
         let pieces: Vec<Rc<Piece>> = vec![];
         let dead_pieces: Vec<Rc<Piece>> = vec![];
-        let pawn_direction: i8;
+        let pawn_direction: i64;
         let piece_char: char;
 
         match color {
@@ -203,25 +226,48 @@ struct Piece {
 }
 
 impl Piece {
-    fn validate_move(&self, source: &LocationCoords, dest: &LocationCoords) {
+    fn validate_move(&self, source: &LocationCoords, dest: &LocationCoords) -> bool {
         match self.piece_type {
             PieceType::Pawn => {
                 println!("DO PAWN MOVE");
+                // Get movement vector between both points
+                let move_vec: (i64, i64) = (
+                    dest.x as i64 - source.x as i64,
+                    dest.y as i64 - source.y as i64,
+                );
+
+                // Validate length of vector matches pawn capabilities
+                if move_vec.1.abs() != 1 {
+                    return false;
+                }
+
+                // Validate the pawn unit vector matches direction of player (pawns can't move
+                // backwards)
+                if move_vec != (0, 1 * self.owner.pawn_direction) {
+                    return false;
+                }
+
+                true
             }
             PieceType::Rook => {
                 println!("DO ROOK MOVE");
+                false
             }
             PieceType::Knight => {
                 println!("DO KNIGHT MOVE");
+                false
             }
             PieceType::Bishop => {
                 println!("DO BISHOP MOVE");
+                false
             }
             PieceType::Queen => {
                 println!("DO QUEEN MOVE");
+                false
             }
             PieceType::King => {
                 println!("DO KING MOVE");
+                false
             }
         }
     }
@@ -261,9 +307,11 @@ fn main() {
 
     println!("{}", &game);
 
-    game.move_piece(LocationCoords { x: 6, y: 1 }, LocationCoords { x: 5, y: 1 });
-    game.move_piece(LocationCoords { x: 1, y: 1 }, LocationCoords { x: 2, y: 1 });
-    game.move_piece(LocationCoords { x: 6, y: 1 }, LocationCoords { x: 5, y: 1 });
-    game.move_piece(LocationCoords { x: 6, y: 1 }, LocationCoords { x: 5, y: 1 });
-    game.move_piece(LocationCoords { x: 1, y: 1 }, LocationCoords { x: 2, y: 1 });
+    game.move_piece(LocationCoords { x: 7, y: 6 }, LocationCoords { x: 7, y: 5 });
+    game.move_piece(LocationCoords { x: 0, y: 1 }, LocationCoords { x: 0, y: 2 });
+
+    game.move_piece(LocationCoords { x: 7, y: 5 }, LocationCoords { x: 7, y: 6 });
+    game.move_piece(LocationCoords { x: 7, y: 5 }, LocationCoords { x: 7, y: 4 });
+
+    println!("{}", &game);
 }
