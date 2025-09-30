@@ -26,6 +26,7 @@ impl Game {
                     board[i].push(BoardLocation {
                         coords: LocationCoords { x: j, y: i },
                         state: LocationState::Occupied,
+                        // TODO: Reverse board population so pawns are in player's front row
                         piece: Some(Rc::clone(&player2.pieces.borrow()[i * 7 + 1])),
                     })
                 } else if i >= 2 && i < 6 {
@@ -254,12 +255,44 @@ impl Player {
 
     fn populate_pieces(player: &Rc<Self>) {
         let mut pieces = player.pieces.borrow_mut();
-        for _ in 0..16 {
-            pieces.push(Rc::new(Piece {
-                piece_type: PieceType::Pawn,
-                owner: Rc::clone(player),
-                id: Uuid::new_v4(),
-            }));
+        for i in 0..16 {
+            if i < 8 {
+                pieces.push(Rc::new(Piece {
+                    piece_type: PieceType::Pawn,
+                    owner: Rc::clone(player),
+                    id: Uuid::new_v4(),
+                }));
+            } else if i == 8 || i == 15 {
+                pieces.push(Rc::new(Piece {
+                    piece_type: PieceType::Rook,
+                    owner: Rc::clone(player),
+                    id: Uuid::new_v4(),
+                }));
+            } else if i == 9 || i == 14 {
+                pieces.push(Rc::new(Piece {
+                    piece_type: PieceType::Knight,
+                    owner: Rc::clone(player),
+                    id: Uuid::new_v4(),
+                }));
+            } else if i == 10 || i == 13 {
+                pieces.push(Rc::new(Piece {
+                    piece_type: PieceType::Bishop,
+                    owner: Rc::clone(player),
+                    id: Uuid::new_v4(),
+                }));
+            } else if i == 11 {
+                pieces.push(Rc::new(Piece {
+                    piece_type: PieceType::Queen,
+                    owner: Rc::clone(player),
+                    id: Uuid::new_v4(),
+                }));
+            } else if i == 12 {
+                pieces.push(Rc::new(Piece {
+                    piece_type: PieceType::King,
+                    owner: Rc::clone(player),
+                    id: Uuid::new_v4(),
+                }));
+            }
         }
     }
 }
