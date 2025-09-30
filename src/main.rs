@@ -76,6 +76,12 @@ impl Game {
 
                     match self.get_loc_cartesian(&dest).state {
                         LocationState::Occupied => {
+                            // Validate piece attack
+                            if !piece.validate_attack(&source, &dest) {
+                                println!("NOT A VALID ATTACK FOR {:?}", piece);
+                            }
+
+                            // Check for friendly fire / path open
                             if let Some(o) = &self.get_loc_cartesian(&dest).piece {
                                 if o.owner.name == piece.owner.name {
                                     println!("FRIENDLY FIRE!");
@@ -83,6 +89,7 @@ impl Game {
                                 }
                             } else {
                                 // Reconcile attack / move
+                                // TODO handle moving piece to killed piece list of owner.
                             }
                         }
                         _ => {
@@ -240,6 +247,39 @@ struct Piece {
 }
 
 impl Piece {
+    fn validate_attack(&self, source: &LocationCoords, dest: &LocationCoords) -> bool {
+        match self.piece_type {
+            PieceType::Pawn => {
+                println!("DO PAWN ATTACK");
+                let valid_attack: (i64, i64) = (1, 1);
+
+                let attack_vec: (i64, i64) = (
+                    dest.x as i64 - source.x as i64,
+                    dest.y as i64 - source.y as i64,
+                );
+
+                // Validate vector matches attack vector in any direction.
+                if (attack_vec.0.abs(), attack_vec.1.abs()) != valid_attack {
+                    return false;
+                }
+
+                // Validate vector matches direction of owner's pawn direction.
+                if attack_vec
+                    != (
+                        valid_attack.0 * self.owner.pawn_direction,
+                        valid_attack.1 * self.owner.pawn_direction,
+                    )
+                {
+                    return false;
+                }
+
+                true
+            }
+            // Every other piece has attack patterns that match move patterns.
+            _ => self.validate_move(&source, &dest),
+        }
+    }
+
     fn validate_move(&self, source: &LocationCoords, dest: &LocationCoords) -> bool {
         match self.piece_type {
             PieceType::Pawn => {
@@ -322,10 +362,14 @@ fn main() {
     println!("{}", &game);
 
     game.move_piece(LocationCoords { x: 7, y: 6 }, LocationCoords { x: 7, y: 5 });
-    game.move_piece(LocationCoords { x: 0, y: 1 }, LocationCoords { x: 0, y: 2 });
+    game.move_piece(LocationCoords { x: 6, y: 1 }, LocationCoords { x: 6, y: 2 });
 
-    game.move_piece(LocationCoords { x: 7, y: 5 }, LocationCoords { x: 7, y: 6 });
     game.move_piece(LocationCoords { x: 7, y: 5 }, LocationCoords { x: 7, y: 4 });
+    game.move_piece(LocationCoords { x: 6, y: 2 }, LocationCoords { x: 6, y: 3 });
+
+    println!("{}", &game);
+
+    game.move_piece(LocationCoords { x: 7, y: 4 }, LocationCoords { x: 6, y: 3 });
 
     println!("{}", &game);
 }
