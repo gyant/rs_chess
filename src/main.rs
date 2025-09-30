@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
+use uuid::Uuid;
 
 #[derive(Debug)]
 struct Game {
@@ -86,10 +87,31 @@ impl Game {
                                 if o.owner.name == piece.owner.name {
                                     println!("FRIENDLY FIRE!");
                                     return;
+                                } else {
+                                    // Reconcile attack / move
+                                    let id = o.id;
+
+                                    let mut owner_board = o.owner.pieces.borrow_mut();
+                                    let mut dead_board = o.owner.dead_pieces.borrow_mut();
+                                    let mut destroyed: usize = 99; // TODO: Figure out more
+                                                                   // graceful way to handle this
+                                    let mut found_destroyed: bool = false;
+
+                                    for (index, piece) in owner_board.iter().enumerate() {
+                                        if id == piece.id {
+                                            println!("FOUND ATTACKED PIECE: {:?}", piece);
+                                            found_destroyed = true;
+                                            destroyed = index;
+                                        }
+                                    }
+
+                                    if found_destroyed {
+                                        dead_board.push(owner_board.swap_remove(destroyed));
+                                    } else {
+                                        return;
+                                    }
                                 }
                             } else {
-                                // Reconcile attack / move
-                                // TODO handle moving piece to killed piece list of owner.
                             }
                         }
                         _ => {
@@ -236,6 +258,7 @@ impl Player {
             pieces.push(Rc::new(Piece {
                 piece_type: PieceType::Pawn,
                 owner: Rc::clone(player),
+                id: Uuid::new_v4(),
             }));
         }
     }
@@ -244,6 +267,7 @@ impl Player {
 struct Piece {
     piece_type: PieceType,
     owner: Rc<Player>,
+    id: Uuid,
 }
 
 impl Piece {
@@ -332,6 +356,7 @@ impl fmt::Debug for Piece {
         f.debug_struct("Piece")
             .field("piece_type", &self.piece_type)
             .field("owner", &self.owner.name)
+            .field("id", &self.id)
             .finish()
     }
 }
@@ -372,4 +397,18 @@ fn main() {
     game.move_piece(LocationCoords { x: 7, y: 4 }, LocationCoords { x: 6, y: 3 });
 
     println!("{}", &game);
+
+    println!(
+        "Player {:?}\nActive pieces: {:?}\nDead pieces: {:?}",
+        &game.player2.name, &game.player2.pieces, &game.player2.dead_pieces
+    );
+
+    let pieces = game.player2.pieces.borrow();
+    let dead = game.player2.dead_pieces.borrow();
+
+    println!(
+        "Alive count: {}\nDead count: {}",
+        &pieces.len(),
+        &dead.len()
+    );
 }
