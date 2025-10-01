@@ -100,25 +100,24 @@ impl Game {
 
                                     let mut owner_board = o.owner.pieces.borrow_mut();
                                     let mut dead_board = o.owner.dead_pieces.borrow_mut();
-                                    let mut destroyed: usize = 99; // TODO: Figure out more
-                                                                   // graceful way to handle this
+                                    let mut destroyed: i64 = -1;
                                     let mut found_destroyed: bool = false;
 
                                     for (index, piece) in owner_board.iter().enumerate() {
                                         if id == piece.id {
                                             println!("FOUND ATTACKED PIECE: {:?}", piece);
                                             found_destroyed = true;
-                                            destroyed = index;
+                                            destroyed = index as i64;
                                         }
                                     }
 
                                     if found_destroyed {
-                                        dead_board.push(owner_board.swap_remove(destroyed));
+                                        dead_board
+                                            .push(owner_board.swap_remove(destroyed as usize));
                                     } else {
                                         return;
                                     }
                                 }
-                            } else {
                             }
                         }
                         _ => {
@@ -142,26 +141,20 @@ impl Game {
         }
 
         if successful_move {
-            {
-                let source_board = &mut self.board[source.y][source.x];
+            let source_board = &mut self.board[source.y][source.x];
+            source_board.piece = None;
+            source_board.state = LocationState::Empty;
 
-                source_board.piece = None;
-                source_board.state = LocationState::Empty;
-            }
-
-            {
-                let dest_board = &mut self.board[dest.y][dest.x];
-
-                dest_board.piece = piece_clone;
-                dest_board.state = LocationState::Occupied;
-            }
+            let dest_board = &mut self.board[dest.y][dest.x];
+            dest_board.piece = piece_clone;
+            dest_board.state = LocationState::Occupied;
 
             self.switch_turns();
         }
     }
 
     fn switch_turns(&mut self) {
-        if self.current_player.name == self.player1.name {
+        if self.current_player.id == self.player1.id {
             self.current_player = Rc::clone(&self.player2);
         } else {
             self.current_player = Rc::clone(&self.player1);
@@ -216,6 +209,7 @@ enum LocationState {
 #[derive(Debug)]
 struct Player {
     name: String,
+    id: Uuid,
     pieces: RefCell<Vec<Rc<Piece>>>,
     dead_pieces: RefCell<Vec<Rc<Piece>>>,
     color: Color,
@@ -243,6 +237,7 @@ impl Player {
 
         let player = Player {
             name: name.to_string(),
+            id: Uuid::new_v4(),
             pieces: RefCell::new(pieces),
             dead_pieces: RefCell::new(dead_pieces),
             color,
