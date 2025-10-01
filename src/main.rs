@@ -18,6 +18,10 @@ impl Game {
         Player::populate_pieces(&player1);
         Player::populate_pieces(&player2);
 
+        // Reverse board for player 2 board location population
+        let mut player2_board = player2.pieces.borrow_mut();
+        player2_board.reverse();
+
         for i in 0..8 {
             board.push(Vec::with_capacity(8));
 
@@ -26,8 +30,7 @@ impl Game {
                     board[i].push(BoardLocation {
                         coords: LocationCoords { x: j, y: i },
                         state: LocationState::Occupied,
-                        // TODO: Reverse board population so pawns are in player's front row
-                        piece: Some(Rc::clone(&player2.pieces.borrow()[i * 7 + 1])),
+                        piece: Some(Rc::clone(&player2_board[i * 7 + 1])),
                     })
                 } else if i >= 2 && i < 6 {
                     board[i].push(BoardLocation {
@@ -45,6 +48,10 @@ impl Game {
             }
         }
 
+        // Re-reverse for consistency
+        player2_board.reverse();
+        drop(player2_board);
+
         let current_player = Rc::clone(&player1);
 
         Game {
@@ -58,7 +65,6 @@ impl Game {
     fn get_loc_cartesian(&self, location: &LocationCoords) -> &BoardLocation {
         &self.board[location.y][location.x]
     }
-    //fn run(&mut self) {}
 
     fn move_piece(&mut self, source: LocationCoords, dest: LocationCoords) {
         let mut successful_move = false;
