@@ -367,7 +367,27 @@ impl Piece {
             }
             PieceType::Knight => {
                 println!("DO KNIGHT MOVE");
-                false
+                let move_vec: (i64, i64) = (
+                    dest.x as i64 - source.x as i64,
+                    dest.y as i64 - source.y as i64,
+                );
+
+                let valid_vecs: Vec<(i64, i64)> = vec![(2, 1), (1, 2)];
+
+                let mut valid_move: bool = false;
+
+                for v in valid_vecs {
+                    if (move_vec.0.abs(), move_vec.1.abs()) == v {
+                        valid_move = true;
+                        break;
+                    }
+                }
+
+                if !valid_move {
+                    return false;
+                }
+
+                true
             }
             PieceType::Bishop => {
                 println!("DO BISHOP MOVE");
@@ -445,4 +465,10 @@ fn main() {
         &pieces.len(),
         &dead.len()
     );
+
+    drop(pieces);
+    drop(dead);
+
+    game.move_piece(LocationCoords { x: 6, y: 0 }, LocationCoords { x: 5, y: 2 });
+    println!("{}", &game);
 }
