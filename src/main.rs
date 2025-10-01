@@ -399,7 +399,27 @@ impl Piece {
             }
             PieceType::King => {
                 println!("DO KING MOVE");
-                false
+                let move_vec: (i64, i64) = (
+                    dest.x as i64 - source.x as i64,
+                    dest.y as i64 - source.y as i64,
+                );
+
+                let valid_vecs: Vec<(i64, i64)> = vec![(0, 1), (1, 0), (1, 1)];
+
+                let mut valid_move: bool = false;
+
+                for v in valid_vecs {
+                    if (move_vec.0.abs(), move_vec.1.abs()) == v {
+                        valid_move = true;
+                        break;
+                    }
+                }
+
+                if !valid_move {
+                    return false;
+                }
+
+                true
             }
         }
     }
@@ -471,4 +491,12 @@ fn main() {
 
     game.move_piece(LocationCoords { x: 6, y: 0 }, LocationCoords { x: 5, y: 2 });
     println!("{}", &game);
+
+    game.move_piece(LocationCoords { x: 4, y: 6 }, LocationCoords { x: 4, y: 5 });
+    game.move_piece(LocationCoords { x: 5, y: 2 }, LocationCoords { x: 3, y: 3 });
+    game.move_piece(LocationCoords { x: 4, y: 7 }, LocationCoords { x: 4, y: 6 });
+    println!("{}", &game);
+
+    // TODO: Figure out why placement of back row is borked
+    println!("{:#?}", &game.player1.pieces);
 }
