@@ -22,6 +22,9 @@ impl Game {
         let mut player2_board = player2.pieces.borrow_mut();
         player2_board.reverse();
 
+        // Puts queen and king in correct spots
+        player2_board.swap(3, 4);
+
         for i in 0..8 {
             board.push(Vec::with_capacity(8));
 
@@ -30,8 +33,8 @@ impl Game {
                     board[i].push(BoardLocation {
                         coords: LocationCoords { x: j, y: i },
                         state: LocationState::Occupied,
-                        piece: Some(Rc::clone(&player2_board[i * 7 + 1])),
-                    })
+                        piece: Some(Rc::clone(&player2_board[i * 7 + j])),
+                    });
                 } else if i >= 2 && i < 6 {
                     board[i].push(BoardLocation {
                         coords: LocationCoords { x: j, y: i },
@@ -42,13 +45,14 @@ impl Game {
                     board[i].push(BoardLocation {
                         coords: LocationCoords { x: j, y: i },
                         state: LocationState::Occupied,
-                        piece: Some(Rc::clone(&player1.pieces.borrow()[(i - 6) * 7 + 1])),
-                    })
+                        piece: Some(Rc::clone(&player1.pieces.borrow()[(i - 6) * 7 + 1 + j])),
+                    });
                 }
             }
         }
 
         // Re-reverse for consistency
+        player2_board.swap(3, 4);
         player2_board.reverse();
         drop(player2_board);
 
@@ -169,10 +173,32 @@ impl fmt::Display for Game {
         for (index, row) in self.board.iter().enumerate() {
             for column in row {
                 match column.state {
-                    LocationState::Empty => text.push_str("_"),
+                    LocationState::Empty => text.push_str(" __ "),
                     _ => {
                         if let Some(p) = &column.piece {
+                            text.push(' ');
                             text.push(p.owner.piece_char);
+                            match p.piece_type {
+                                PieceType::Pawn => {
+                                    text.push('P');
+                                }
+                                PieceType::Rook => {
+                                    text.push('R');
+                                }
+                                PieceType::Knight => {
+                                    text.push('N');
+                                }
+                                PieceType::Bishop => {
+                                    text.push('B');
+                                }
+                                PieceType::Queen => {
+                                    text.push('Q');
+                                }
+                                PieceType::King => {
+                                    text.push('K');
+                                }
+                            }
+                            text.push(' ');
                         }
                     }
                 };
@@ -456,47 +482,47 @@ fn main() {
     let player2 = Player::with_rc("alice", Color::Black);
 
     let mut game = Game::new(player1, player2);
-    println!("{:#?}", &game);
+    //println!("{:#?}", &game);
 
     println!("{}", &game);
 
-    game.move_piece(LocationCoords { x: 7, y: 6 }, LocationCoords { x: 7, y: 5 });
-    game.move_piece(LocationCoords { x: 6, y: 1 }, LocationCoords { x: 6, y: 2 });
+    //game.move_piece(LocationCoords { x: 7, y: 6 }, LocationCoords { x: 7, y: 5 });
+    //game.move_piece(LocationCoords { x: 6, y: 1 }, LocationCoords { x: 6, y: 2 });
 
-    game.move_piece(LocationCoords { x: 7, y: 5 }, LocationCoords { x: 7, y: 4 });
-    game.move_piece(LocationCoords { x: 6, y: 2 }, LocationCoords { x: 6, y: 3 });
+    //game.move_piece(LocationCoords { x: 7, y: 5 }, LocationCoords { x: 7, y: 4 });
+    //game.move_piece(LocationCoords { x: 6, y: 2 }, LocationCoords { x: 6, y: 3 });
 
-    println!("{}", &game);
+    //println!("{}", &game);
 
-    game.move_piece(LocationCoords { x: 7, y: 4 }, LocationCoords { x: 6, y: 3 });
+    //game.move_piece(LocationCoords { x: 7, y: 4 }, LocationCoords { x: 6, y: 3 });
 
-    println!("{}", &game);
+    //println!("{}", &game);
 
-    println!(
-        "Player {:?}\nActive pieces: {:?}\nDead pieces: {:?}",
-        &game.player2.name, &game.player2.pieces, &game.player2.dead_pieces
-    );
+    //println!(
+    //    "Player {:?}\nActive pieces: {:?}\nDead pieces: {:?}",
+    //    &game.player2.name, &game.player2.pieces, &game.player2.dead_pieces
+    //);
 
-    let pieces = game.player2.pieces.borrow();
-    let dead = game.player2.dead_pieces.borrow();
+    //let pieces = game.player2.pieces.borrow();
+    //let dead = game.player2.dead_pieces.borrow();
 
-    println!(
-        "Alive count: {}\nDead count: {}",
-        &pieces.len(),
-        &dead.len()
-    );
+    //println!(
+    //    "Alive count: {}\nDead count: {}",
+    //    &pieces.len(),
+    //    &dead.len()
+    //);
 
-    drop(pieces);
-    drop(dead);
+    //drop(pieces);
+    //drop(dead);
 
-    game.move_piece(LocationCoords { x: 6, y: 0 }, LocationCoords { x: 5, y: 2 });
-    println!("{}", &game);
+    //game.move_piece(LocationCoords { x: 6, y: 0 }, LocationCoords { x: 5, y: 2 });
+    //println!("{}", &game);
 
-    game.move_piece(LocationCoords { x: 4, y: 6 }, LocationCoords { x: 4, y: 5 });
-    game.move_piece(LocationCoords { x: 5, y: 2 }, LocationCoords { x: 3, y: 3 });
-    game.move_piece(LocationCoords { x: 4, y: 7 }, LocationCoords { x: 4, y: 6 });
-    println!("{}", &game);
+    //game.move_piece(LocationCoords { x: 4, y: 6 }, LocationCoords { x: 4, y: 5 });
+    //game.move_piece(LocationCoords { x: 5, y: 2 }, LocationCoords { x: 3, y: 3 });
+    //game.move_piece(LocationCoords { x: 4, y: 7 }, LocationCoords { x: 4, y: 6 });
+    //println!("{}", &game);
 
-    // TODO: Figure out why placement of back row is borked
-    println!("{:#?}", &game.player1.pieces);
+    //// TODO: Figure out why placement of back row is borked
+    //println!("{:#?}", &game.player1.pieces);
 }
