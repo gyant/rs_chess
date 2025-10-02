@@ -486,43 +486,40 @@ fn main() {
 
     println!("{}", &game);
 
-    //game.move_piece(LocationCoords { x: 7, y: 6 }, LocationCoords { x: 7, y: 5 });
-    //game.move_piece(LocationCoords { x: 6, y: 1 }, LocationCoords { x: 6, y: 2 });
+    game.move_piece(LocationCoords { x: 7, y: 6 }, LocationCoords { x: 7, y: 5 });
+    game.move_piece(LocationCoords { x: 6, y: 1 }, LocationCoords { x: 6, y: 2 });
 
-    //game.move_piece(LocationCoords { x: 7, y: 5 }, LocationCoords { x: 7, y: 4 });
-    //game.move_piece(LocationCoords { x: 6, y: 2 }, LocationCoords { x: 6, y: 3 });
+    game.move_piece(LocationCoords { x: 7, y: 5 }, LocationCoords { x: 7, y: 4 });
+    game.move_piece(LocationCoords { x: 6, y: 2 }, LocationCoords { x: 6, y: 3 });
 
-    //println!("{}", &game);
+    println!("{}", &game);
 
-    //game.move_piece(LocationCoords { x: 7, y: 4 }, LocationCoords { x: 6, y: 3 });
+    game.move_piece(LocationCoords { x: 7, y: 4 }, LocationCoords { x: 6, y: 3 });
 
-    //println!("{}", &game);
+    println!("{}", &game);
 
-    //println!(
-    //    "Player {:?}\nActive pieces: {:?}\nDead pieces: {:?}",
-    //    &game.player2.name, &game.player2.pieces, &game.player2.dead_pieces
-    //);
+    println!(
+        "Player {:?}\nActive pieces: {:?}\nDead pieces: {:?}",
+        &game.player2.name, &game.player2.pieces, &game.player2.dead_pieces
+    );
 
-    //let pieces = game.player2.pieces.borrow();
-    //let dead = game.player2.dead_pieces.borrow();
+    let pieces = game.player2.pieces.borrow();
+    let dead = game.player2.dead_pieces.borrow();
 
-    //println!(
-    //    "Alive count: {}\nDead count: {}",
-    //    &pieces.len(),
-    //    &dead.len()
-    //);
+    println!(
+        "Alive count: {}\nDead count: {}",
+        &pieces.len(),
+        &dead.len()
+    );
 
-    //drop(pieces);
-    //drop(dead);
+    drop(pieces);
+    drop(dead);
 
-    //game.move_piece(LocationCoords { x: 6, y: 0 }, LocationCoords { x: 5, y: 2 });
-    //println!("{}", &game);
+    game.move_piece(LocationCoords { x: 6, y: 0 }, LocationCoords { x: 5, y: 2 });
+    println!("{}", &game);
 
-    //game.move_piece(LocationCoords { x: 4, y: 6 }, LocationCoords { x: 4, y: 5 });
-    //game.move_piece(LocationCoords { x: 5, y: 2 }, LocationCoords { x: 3, y: 3 });
-    //game.move_piece(LocationCoords { x: 4, y: 7 }, LocationCoords { x: 4, y: 6 });
-    //println!("{}", &game);
-
-    //// TODO: Figure out why placement of back row is borked
-    //println!("{:#?}", &game.player1.pieces);
+    game.move_piece(LocationCoords { x: 4, y: 6 }, LocationCoords { x: 4, y: 5 });
+    game.move_piece(LocationCoords { x: 5, y: 2 }, LocationCoords { x: 3, y: 3 });
+    game.move_piece(LocationCoords { x: 4, y: 7 }, LocationCoords { x: 4, y: 6 });
+    println!("{}", &game);
 }
