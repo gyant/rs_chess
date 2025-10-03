@@ -365,14 +365,18 @@ impl Piece {
     }
 
     fn validate_move(&self, source: &LocationCoords, dest: &LocationCoords) -> bool {
+        // Check bounds
+        if dest.x > 7 || dest.y > 7 {
+            println!("Destination out of bounds");
+            return false;
+        }
+
+        // Check piece capabilities
         match self.piece_type {
             PieceType::Pawn => {
                 println!("DO PAWN MOVE");
                 // Get movement vector between both points
-                let move_vec: (i64, i64) = (
-                    dest.x as i64 - source.x as i64,
-                    dest.y as i64 - source.y as i64,
-                );
+                let move_vec: (i64, i64) = get_move_vector(&source, &dest);
 
                 // Validate length of vector matches pawn capabilities
                 if move_vec.1.abs() != 1 {
@@ -393,10 +397,7 @@ impl Piece {
             }
             PieceType::Knight => {
                 println!("DO KNIGHT MOVE");
-                let move_vec: (i64, i64) = (
-                    dest.x as i64 - source.x as i64,
-                    dest.y as i64 - source.y as i64,
-                );
+                let move_vec: (i64, i64) = get_move_vector(&source, &dest);
 
                 let valid_vecs: Vec<(i64, i64)> = vec![(2, 1), (1, 2)];
 
@@ -425,10 +426,7 @@ impl Piece {
             }
             PieceType::King => {
                 println!("DO KING MOVE");
-                let move_vec: (i64, i64) = (
-                    dest.x as i64 - source.x as i64,
-                    dest.y as i64 - source.y as i64,
-                );
+                let move_vec: (i64, i64) = get_move_vector(&source, &dest);
 
                 let valid_vecs: Vec<(i64, i64)> = vec![(0, 1), (1, 0), (1, 1)];
 
@@ -477,6 +475,45 @@ enum PieceType {
     King,
 }
 
+fn get_move_vector(source: &LocationCoords, dest: &LocationCoords) -> (i64, i64) {
+    (
+        dest.x as i64 - source.x as i64,
+        dest.y as i64 - source.y as i64,
+    )
+}
+
+fn gcd(mut a: usize, mut b: usize) -> usize {
+    while b != 0 {
+        let temp = b;
+        b = a % b;
+        a = temp;
+    }
+    a
+}
+
+fn points_along_vector(source: &LocationCoords, move_vec: &(i64, i64)) -> Vec<LocationCoords> {
+    let gcd = gcd(
+        move_vec.0.abs().try_into().unwrap(),
+        move_vec.1.abs().try_into().unwrap(),
+    );
+
+    let step_x: i64 = move_vec.0 / gcd as i64;
+    let step_y: i64 = move_vec.1 / gcd as i64;
+
+    let mut points: Vec<LocationCoords> = vec![];
+
+    for k in 1..gcd + 1 {
+        let x = source.x as i64 + k as i64 * step_x;
+        let y = source.y as i64 + k as i64 * step_y;
+        points.push(LocationCoords {
+            x: x as usize,
+            y: y as usize,
+        });
+    }
+
+    points
+}
+
 fn main() {
     let player1 = Player::with_rc("bob", Color::White);
     let player2 = Player::with_rc("alice", Color::Black);
@@ -521,4 +558,14 @@ fn main() {
     game.move_piece(LocationCoords { x: 5, y: 2 }, LocationCoords { x: 3, y: 3 });
     game.move_piece(LocationCoords { x: 4, y: 7 }, LocationCoords { x: 4, y: 6 });
     println!("{}", &game);
+
+    points_along_vector(&LocationCoords { x: 0, y: 0 }, &(3, 3));
+    println!(
+        "{:#?}",
+        points_along_vector(&LocationCoords { x: 7, y: 7 }, &(-3, -3))
+    );
+    println!(
+        "{:#?}",
+        points_along_vector(&LocationCoords { x: 3, y: 3 }, &(-3, 3))
+    );
 }
