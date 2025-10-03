@@ -33,7 +33,7 @@ impl Game {
                     board[i].push(BoardLocation {
                         coords: LocationCoords { x: j, y: i },
                         state: LocationState::Occupied,
-                        piece: Some(Rc::clone(&player2_board[i * 7 + j])),
+                        piece: Some(Rc::clone(&player2_board[i * 8 + j])),
                     });
                 } else if i >= 2 && i < 6 {
                     board[i].push(BoardLocation {
@@ -45,7 +45,7 @@ impl Game {
                     board[i].push(BoardLocation {
                         coords: LocationCoords { x: j, y: i },
                         state: LocationState::Occupied,
-                        piece: Some(Rc::clone(&player1.pieces.borrow()[(i - 6) * 7 + 1 + j])),
+                        piece: Some(Rc::clone(&player1.pieces.borrow()[(i - 6) * 8 + j])),
                     });
                 }
             }
@@ -482,7 +482,6 @@ fn main() {
     let player2 = Player::with_rc("alice", Color::Black);
 
     let mut game = Game::new(player1, player2);
-    //println!("{:#?}", &game);
 
     println!("{}", &game);
 
