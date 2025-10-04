@@ -390,15 +390,25 @@ impl Piece {
             PieceType::Pawn => {
                 println!("DO PAWN MOVE");
 
-                // Validate length of vector matches pawn capabilities
-                if move_vec.1.abs() != 1 {
-                    return false;
-                }
+                if !*self.has_moved.borrow() {
+                    if !(move_vec.1.abs() >= 1 && move_vec.1.abs() <= 2) {
+                        return false;
+                    }
 
-                // Validate the pawn unit vector matches direction of player (pawns can't move
-                // backwards)
-                if *move_vec != (0, 1 * self.owner.pawn_direction) {
-                    return false;
+                    if *move_vec != (0, move_vec.1.abs() * self.owner.pawn_direction) {
+                        return false;
+                    }
+                } else {
+                    // Validate length of vector matches pawn capabilities
+                    if move_vec.1.abs() != 1 {
+                        return false;
+                    }
+
+                    // Validate the pawn unit vector matches direction of player (pawns can't move
+                    // backwards)
+                    if *move_vec != (0, 1 * self.owner.pawn_direction) {
+                        return false;
+                    }
                 }
 
                 true
@@ -672,6 +682,12 @@ fn main() {
 
     // Bishop reverse test
     game.move_piece(LocationCoords { x: 7, y: 5 }, LocationCoords { x: 5, y: 7 });
+
+    // Pawn double step test
+    game.move_piece(LocationCoords { x: 0, y: 1 }, LocationCoords { x: 0, y: 3 });
+
+    game.move_piece(LocationCoords { x: 4, y: 5 }, LocationCoords { x: 4, y: 3 });
+    game.move_piece(LocationCoords { x: 4, y: 5 }, LocationCoords { x: 4, y: 4 });
 
     println!("{}", &game);
 }
