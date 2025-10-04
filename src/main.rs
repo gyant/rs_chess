@@ -74,6 +74,12 @@ impl Game {
         let mut successful_move = false;
         let mut piece_clone: Option<Rc<Piece>> = None;
 
+        // Check bounds
+        if dest.x > 7 || dest.y > 7 {
+            println!("Destination out of bounds");
+            return;
+        }
+
         match self.board[source.y][source.x].state {
             LocationState::Occupied => {
                 if let Some(piece) = &self.board[source.y][source.x].piece {
@@ -86,10 +92,12 @@ impl Game {
                         return;
                     }
 
+                    let move_vec: (i32, i32) = get_move_vector(&source, &dest);
+
                     match self.get_loc_cartesian(&dest).state {
                         LocationState::Occupied => {
                             // Validate piece attack
-                            if !piece.validate_attack(&source, &dest) {
+                            if !piece.validate_attack(&move_vec) {
                                 println!("NOT A VALID ATTACK FOR {:?}", piece);
                             }
 
@@ -126,7 +134,7 @@ impl Game {
                         }
                         _ => {
                             // Validate piece move
-                            if !piece.validate_move(&source, &dest) {
+                            if !piece.validate_move(&move_vec) {
                                 println!("NOT A VALID MOVE FOR {:?}", piece);
                                 return;
                             }
@@ -331,16 +339,11 @@ struct Piece {
 }
 
 impl Piece {
-    fn validate_attack(&self, source: &LocationCoords, dest: &LocationCoords) -> bool {
+    fn validate_attack(&self, attack_vec: &(i32, i32)) -> bool {
         match self.piece_type {
             PieceType::Pawn => {
                 println!("DO PAWN ATTACK");
                 let valid_attack: (i32, i32) = (1, 1);
-
-                let attack_vec: (i32, i32) = (
-                    dest.x as i32 - source.x as i32,
-                    dest.y as i32 - source.y as i32,
-                );
 
                 // Validate vector matches attack vector in any direction.
                 if (attack_vec.0.abs(), attack_vec.1.abs()) != valid_attack {
@@ -348,7 +351,7 @@ impl Piece {
                 }
 
                 // Validate vector matches direction of owner's pawn direction.
-                if attack_vec
+                if *attack_vec
                     != (
                         valid_attack.0 * self.owner.pawn_direction,
                         valid_attack.1 * self.owner.pawn_direction,
@@ -360,23 +363,15 @@ impl Piece {
                 true
             }
             // Every other piece has attack patterns that match move patterns.
-            _ => self.validate_move(&source, &dest),
+            _ => self.validate_move(&attack_vec),
         }
     }
 
-    fn validate_move(&self, source: &LocationCoords, dest: &LocationCoords) -> bool {
-        // Check bounds
-        if dest.x > 7 || dest.y > 7 {
-            println!("Destination out of bounds");
-            return false;
-        }
-
+    fn validate_move(&self, move_vec: &(i32, i32)) -> bool {
         // Check piece capabilities
         match self.piece_type {
             PieceType::Pawn => {
                 println!("DO PAWN MOVE");
-                // Get movement vector between both points
-                let move_vec: (i32, i32) = get_move_vector(&source, &dest);
 
                 // Validate length of vector matches pawn capabilities
                 if move_vec.1.abs() != 1 {
@@ -385,7 +380,7 @@ impl Piece {
 
                 // Validate the pawn unit vector matches direction of player (pawns can't move
                 // backwards)
-                if move_vec != (0, 1 * self.owner.pawn_direction) {
+                if *move_vec != (0, 1 * self.owner.pawn_direction) {
                     return false;
                 }
 
@@ -393,8 +388,6 @@ impl Piece {
             }
             PieceType::Rook => {
                 println!("DO ROOK MOVE");
-
-                let move_vec: (i32, i32) = get_move_vector(&source, &dest);
 
                 let valid_vecs: Vec<(i32, i32)> = vec![(0, 1), (1, 0)];
                 let mut valid_move: bool = false;
@@ -414,7 +407,6 @@ impl Piece {
             }
             PieceType::Knight => {
                 println!("DO KNIGHT MOVE");
-                let move_vec: (i32, i32) = get_move_vector(&source, &dest);
 
                 let valid_vecs: Vec<(i32, i32)> = vec![(2, 1), (1, 2)];
 
@@ -435,7 +427,6 @@ impl Piece {
             }
             PieceType::Bishop => {
                 println!("DO BISHOP MOVE");
-                let move_vec: (i32, i32) = get_move_vector(&source, &dest);
 
                 let valid_vecs: Vec<(i32, i32)> = vec![(1, 1)];
 
@@ -456,7 +447,6 @@ impl Piece {
             }
             PieceType::Queen => {
                 println!("DO QUEEN MOVE");
-                let move_vec: (i32, i32) = get_move_vector(&source, &dest);
 
                 let valid_vecs: Vec<(i32, i32)> = vec![(1, 1), (1, 0), (0, 1)];
 
@@ -477,7 +467,6 @@ impl Piece {
             }
             PieceType::King => {
                 println!("DO KING MOVE");
-                let move_vec: (i32, i32) = get_move_vector(&source, &dest);
 
                 let valid_vecs: Vec<(i32, i32)> = vec![(0, 1), (1, 0), (1, 1)];
 
