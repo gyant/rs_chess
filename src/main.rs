@@ -456,7 +456,24 @@ impl Piece {
             }
             PieceType::Queen => {
                 println!("DO QUEEN MOVE");
-                false
+                let move_vec: (i32, i32) = get_move_vector(&source, &dest);
+
+                let valid_vecs: Vec<(i32, i32)> = vec![(1, 1), (1, 0), (0, 1)];
+
+                let mut valid_move: bool = false;
+
+                for valid in valid_vecs {
+                    if vectors_same_direction(&valid, &(move_vec.0.abs(), move_vec.1.abs())) {
+                        valid_move = true;
+                        break;
+                    }
+                }
+
+                if !valid_move {
+                    return false;
+                }
+
+                true
             }
             PieceType::King => {
                 println!("DO KING MOVE");
