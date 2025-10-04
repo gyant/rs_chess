@@ -153,13 +153,23 @@ impl Game {
         }
 
         if successful_move {
-            let source_board = &mut self.board[source.y][source.x];
-            source_board.piece = None;
-            source_board.state = LocationState::Empty;
+            // Set has_moved to true if this is the first time a piece has moved.
+            if let Some(p) = piece_clone.clone() {
+                let mut has_moved = p.has_moved.borrow_mut();
+                if !*has_moved {
+                    *has_moved = true;
+                }
+            }
 
-            let dest_board = &mut self.board[dest.y][dest.x];
-            dest_board.piece = piece_clone;
-            dest_board.state = LocationState::Occupied;
+            // Set source board location's piece to None.
+            let source_loc = &mut self.board[source.y][source.x];
+            source_loc.piece = None;
+            source_loc.state = LocationState::Empty;
+
+            // Set dest loc to moved piece.
+            let dest_loc = &mut self.board[dest.y][dest.x];
+            dest_loc.piece = piece_clone;
+            dest_loc.state = LocationState::Occupied;
 
             self.switch_turns();
         }
@@ -296,36 +306,42 @@ impl Player {
                     piece_type: PieceType::Pawn,
                     owner: Rc::clone(player),
                     id: Uuid::new_v4(),
+                    has_moved: RefCell::new(false),
                 }));
             } else if i == 8 || i == 15 {
                 pieces.push(Rc::new(Piece {
                     piece_type: PieceType::Rook,
                     owner: Rc::clone(player),
                     id: Uuid::new_v4(),
+                    has_moved: RefCell::new(false),
                 }));
             } else if i == 9 || i == 14 {
                 pieces.push(Rc::new(Piece {
                     piece_type: PieceType::Knight,
                     owner: Rc::clone(player),
                     id: Uuid::new_v4(),
+                    has_moved: RefCell::new(false),
                 }));
             } else if i == 10 || i == 13 {
                 pieces.push(Rc::new(Piece {
                     piece_type: PieceType::Bishop,
                     owner: Rc::clone(player),
                     id: Uuid::new_v4(),
+                    has_moved: RefCell::new(false),
                 }));
             } else if i == 11 {
                 pieces.push(Rc::new(Piece {
                     piece_type: PieceType::Queen,
                     owner: Rc::clone(player),
                     id: Uuid::new_v4(),
+                    has_moved: RefCell::new(false),
                 }));
             } else if i == 12 {
                 pieces.push(Rc::new(Piece {
                     piece_type: PieceType::King,
                     owner: Rc::clone(player),
                     id: Uuid::new_v4(),
+                    has_moved: RefCell::new(false),
                 }));
             }
         }
@@ -336,6 +352,7 @@ struct Piece {
     piece_type: PieceType,
     owner: Rc<Player>,
     id: Uuid,
+    has_moved: RefCell<bool>,
 }
 
 impl Piece {
@@ -495,6 +512,7 @@ impl fmt::Debug for Piece {
             .field("piece_type", &self.piece_type)
             .field("owner", &self.owner.name)
             .field("id", &self.id)
+            .field("has_moved", &self.has_moved.borrow())
             .finish()
     }
 }
