@@ -686,7 +686,9 @@ fn main() {
     // Pawn double step test
     game.move_piece(LocationCoords { x: 0, y: 1 }, LocationCoords { x: 0, y: 3 });
 
+    // Invalid double move for pawn
     game.move_piece(LocationCoords { x: 4, y: 5 }, LocationCoords { x: 4, y: 3 });
+    // Single move to validate after failed move
     game.move_piece(LocationCoords { x: 4, y: 5 }, LocationCoords { x: 4, y: 4 });
 
     println!("{}", &game);
