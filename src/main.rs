@@ -94,6 +94,25 @@ impl Game {
 
                     let move_vec: (i32, i32) = get_move_vector(&source, &dest);
 
+                    // Check intermediate collisions
+                    match piece.piece_type {
+                        PieceType::Knight => (),
+                        _ => {
+                            // Collisions apply to all other pieces
+                            let intermediate_coords = points_along_vector(&source, &move_vec);
+
+                            for coord in intermediate_coords {
+                                match self.board[coord.y][coord.x].state {
+                                    LocationState::Occupied => {
+                                        println!("COLLISION DETECTED. NOT VALID MOVE");
+                                        return;
+                                    }
+                                    _ => (),
+                                }
+                            }
+                        }
+                    }
+
                     match self.get_loc_cartesian(&dest).state {
                         LocationState::Occupied => {
                             // Validate piece attack
@@ -112,14 +131,14 @@ impl Game {
 
                                     let mut owner_board = o.owner.pieces.borrow_mut();
                                     let mut dead_board = o.owner.dead_pieces.borrow_mut();
-                                    let mut destroyed: i64 = -1;
+                                    let mut destroyed: i32 = -1;
                                     let mut found_destroyed: bool = false;
 
                                     for (index, piece) in owner_board.iter().enumerate() {
                                         if id == piece.id {
                                             println!("FOUND ATTACKED PIECE: {:?}", piece);
                                             found_destroyed = true;
-                                            destroyed = index as i64;
+                                            destroyed = index as i32;
                                         }
                                     }
 
@@ -570,7 +589,8 @@ fn points_along_vector(source: &LocationCoords, move_vec: &(i32, i32)) -> Vec<Lo
 
     let mut points: Vec<LocationCoords> = vec![];
 
-    for k in 1..gcd + 1 {
+    // Ensure we're getting the locations in between source and dest exclusively.
+    for k in 1..gcd {
         let x = source.x as i32 + k as i32 * step_x;
         let y = source.y as i32 + k as i32 * step_y;
         points.push(LocationCoords {
@@ -690,6 +710,9 @@ fn main() {
     game.move_piece(LocationCoords { x: 4, y: 5 }, LocationCoords { x: 4, y: 3 });
     // Single move to validate after failed move
     game.move_piece(LocationCoords { x: 4, y: 5 }, LocationCoords { x: 4, y: 4 });
+
+    // Test failed collision
+    game.move_piece(LocationCoords { x: 0, y: 0 }, LocationCoords { x: 0, y: 6 });
 
     println!("{}", &game);
 }
