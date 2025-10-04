@@ -35,7 +35,7 @@ impl Game {
                         state: LocationState::Occupied,
                         piece: Some(Rc::clone(&player2_board[i * 8 + j])),
                     });
-                } else if i >= 2 && i < 6 {
+                } else if (2..6).contains(&i) {
                     board[i].push(BoardLocation {
                         coords: LocationCoords { x: j, y: i },
                         state: LocationState::Empty,
@@ -102,12 +102,10 @@ impl Game {
                             let intermediate_coords = points_along_vector(&source, &move_vec);
 
                             for coord in intermediate_coords {
-                                match self.board[coord.y][coord.x].state {
-                                    LocationState::Occupied => {
-                                        println!("COLLISION DETECTED. NOT VALID MOVE");
-                                        return;
-                                    }
-                                    _ => (),
+                                if let LocationState::Occupied = self.board[coord.y][coord.x].state
+                                {
+                                    println!("COLLISION DETECTED. NOT VALID MOVE");
+                                    return;
                                 }
                             }
                         }
@@ -162,7 +160,7 @@ impl Game {
 
                     // Mark success
                     successful_move = true;
-                    piece_clone = Some(Rc::clone(&piece));
+                    piece_clone = Some(Rc::clone(piece));
                 }
             }
             _ => {
@@ -242,7 +240,7 @@ impl fmt::Display for Game {
             }
 
             if index < self.board.len() - 1 {
-                text.push_str("\n");
+                text.push('\n');
             }
         }
 
@@ -298,7 +296,7 @@ impl Player {
             }
         }
 
-        let player = Player {
+        Player {
             name: name.to_string(),
             id: Uuid::new_v4(),
             pieces: RefCell::new(pieces),
@@ -306,9 +304,7 @@ impl Player {
             color,
             pawn_direction,
             piece_char,
-        };
-
-        player
+        }
     }
 
     fn with_rc(name: &str, color: Color) -> Rc<Self> {
@@ -399,7 +395,7 @@ impl Piece {
                 true
             }
             // Every other piece has attack patterns that match move patterns.
-            _ => self.validate_move(&attack_vec),
+            _ => self.validate_move(attack_vec),
         }
     }
 
@@ -425,7 +421,7 @@ impl Piece {
 
                     // Validate the pawn unit vector matches direction of player (pawns can't move
                     // backwards)
-                    if *move_vec != (0, 1 * self.owner.pawn_direction) {
+                    if *move_vec != (0, self.owner.pawn_direction) {
                         return false;
                     }
                 }
@@ -608,14 +604,10 @@ fn vectors_same_direction(capability: &(i32, i32), move_vec: &(i32, i32)) -> boo
 
     // Get magnitude of capability vector.
     let norm_capability: f64 =
-        <i32 as TryInto<f64>>::try_into(&capability.0.pow(2) + &capability.1.pow(2))
-            .unwrap()
-            .sqrt();
+        <i32 as Into<f64>>::into(capability.0.pow(2) + capability.1.pow(2)).sqrt();
 
     // Get magnitude of move vec.
-    let norm_move: f64 = <i32 as TryInto<f64>>::try_into(&move_vec.0.pow(2) + &move_vec.1.pow(2))
-        .unwrap()
-        .sqrt();
+    let norm_move: f64 = <i32 as Into<f64>>::into(move_vec.0.pow(2) + move_vec.1.pow(2)).sqrt();
 
     // Take dot product of both vectors.
     let dot_product = (capability.0 * move_vec.0) + (capability.1 * move_vec.1);
