@@ -435,7 +435,24 @@ impl Piece {
             }
             PieceType::Bishop => {
                 println!("DO BISHOP MOVE");
-                false
+                let move_vec: (i32, i32) = get_move_vector(&source, &dest);
+
+                let valid_vecs: Vec<(i32, i32)> = vec![(1, 1)];
+
+                let mut valid_move: bool = false;
+
+                for valid in valid_vecs {
+                    if vectors_same_direction(&valid, &(move_vec.0.abs(), move_vec.1.abs())) {
+                        valid_move = true;
+                        break;
+                    }
+                }
+
+                if !valid_move {
+                    return false;
+                }
+
+                true
             }
             PieceType::Queen => {
                 println!("DO QUEEN MOVE");
@@ -616,6 +633,21 @@ fn main() {
     game.move_piece(LocationCoords { x: 1, y: 1 }, LocationCoords { x: 1, y: 2 });
     game.move_piece(LocationCoords { x: 7, y: 7 }, LocationCoords { x: 7, y: 1 });
     game.move_piece(LocationCoords { x: 7, y: 0 }, LocationCoords { x: 7, y: 1 });
+
+    // Move pawn to make room for bishop test
+    game.move_piece(LocationCoords { x: 6, y: 6 }, LocationCoords { x: 6, y: 5 });
+
+    // Throwaway move for turn
+    game.move_piece(LocationCoords { x: 7, y: 1 }, LocationCoords { x: 7, y: 2 });
+
+    // Bishop test
+    game.move_piece(LocationCoords { x: 5, y: 7 }, LocationCoords { x: 7, y: 5 });
+
+    // throwaway
+    game.move_piece(LocationCoords { x: 7, y: 2 }, LocationCoords { x: 5, y: 2 });
+
+    // Bishop reverse test
+    game.move_piece(LocationCoords { x: 7, y: 5 }, LocationCoords { x: 5, y: 7 });
 
     println!("{}", &game);
 }
