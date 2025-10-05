@@ -19,6 +19,7 @@ pub struct Player {
     pub color: Color,
     pub pawn_direction: i32,
     pub piece_char: char,
+    pub king: RefCell<Option<Rc<Piece>>>,
 }
 
 impl Player {
@@ -47,6 +48,7 @@ impl Player {
             color,
             pawn_direction,
             piece_char,
+            king: RefCell::new(None),
         }
     }
 
@@ -65,6 +67,7 @@ impl Player {
                     owner: Rc::clone(player),
                     id: Uuid::new_v4(),
                     has_moved: RefCell::new(false),
+                    location: RefCell::new(None),
                 }));
             } else if i == 8 || i == 15 {
                 pieces.push(Rc::new(Piece {
@@ -72,6 +75,7 @@ impl Player {
                     owner: Rc::clone(player),
                     id: Uuid::new_v4(),
                     has_moved: RefCell::new(false),
+                    location: RefCell::new(None),
                 }));
             } else if i == 9 || i == 14 {
                 pieces.push(Rc::new(Piece {
@@ -79,6 +83,7 @@ impl Player {
                     owner: Rc::clone(player),
                     id: Uuid::new_v4(),
                     has_moved: RefCell::new(false),
+                    location: RefCell::new(None),
                 }));
             } else if i == 10 || i == 13 {
                 pieces.push(Rc::new(Piece {
@@ -86,6 +91,7 @@ impl Player {
                     owner: Rc::clone(player),
                     id: Uuid::new_v4(),
                     has_moved: RefCell::new(false),
+                    location: RefCell::new(None),
                 }));
             } else if i == 11 {
                 pieces.push(Rc::new(Piece {
@@ -93,14 +99,23 @@ impl Player {
                     owner: Rc::clone(player),
                     id: Uuid::new_v4(),
                     has_moved: RefCell::new(false),
+                    location: RefCell::new(None),
                 }));
             } else if i == 12 {
-                pieces.push(Rc::new(Piece {
+                let king = Rc::new(Piece {
                     piece_type: PieceType::King,
                     owner: Rc::clone(player),
                     id: Uuid::new_v4(),
                     has_moved: RefCell::new(false),
-                }));
+                    location: RefCell::new(None),
+                });
+
+                // Populate king field in player now that it exists.
+                let mut player_king_ref = player.king.borrow_mut();
+                *player_king_ref = Some(Rc::clone(&king));
+
+                // Add king to pieces vec
+                pieces.push(king);
             }
         }
     }

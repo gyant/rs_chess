@@ -3,8 +3,9 @@ use std::fmt;
 use std::rc::Rc;
 use uuid::Uuid;
 
+use crate::location::LocationCoords;
+use crate::player::Player;
 use crate::utils::vectors_same_direction;
-use crate::Player;
 
 #[derive(Debug)]
 pub enum PieceType {
@@ -19,6 +20,7 @@ pub enum PieceType {
 pub struct Piece {
     pub piece_type: PieceType,
     pub owner: Rc<Player>,
+    pub location: RefCell<Option<Rc<LocationCoords>>>,
     pub id: Uuid,
     pub has_moved: RefCell<bool>,
 }
@@ -191,6 +193,7 @@ impl fmt::Debug for Piece {
             .field("owner", &self.owner.name)
             .field("id", &self.id)
             .field("has_moved", &self.has_moved.borrow())
+            .field("location", &self.location.borrow())
             .finish()
     }
 }

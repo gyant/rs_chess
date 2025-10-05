@@ -1,9 +1,11 @@
 mod game;
+mod location;
 mod piece;
 mod player;
 mod utils;
 
-use game::{Game, LocationCoords};
+use game::Game;
+use location::LocationCoords;
 use player::{Color, Player};
 
 fn main() {

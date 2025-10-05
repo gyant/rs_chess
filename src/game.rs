@@ -1,5 +1,6 @@
+use crate::location::{BoardLocation, LocationCoords, LocationState};
 use crate::piece::{Piece, PieceType};
-use crate::player::Player;
+use crate::player::{Color, Player};
 use crate::utils::gcd;
 use std::fmt;
 use std::rc::Rc;
@@ -26,27 +27,46 @@ impl Game {
         // Puts queen and king in correct spots
         player2_board.swap(3, 4);
 
+        // Get read-only ref to player1_board
+        let player1_board = player1.pieces.borrow_mut();
+
         for i in 0..8 {
             board.push(Vec::with_capacity(8));
 
             for j in 0..8 {
+                let coords = Rc::new(LocationCoords { x: j, y: i });
+
                 if i < 2 {
-                    board[i].push(BoardLocation {
-                        coords: LocationCoords { x: j, y: i },
+                    let mut piece_location = player2_board[i * 8 + j].location.borrow_mut();
+                    *piece_location = Some(Rc::clone(&coords));
+
+                    let board_location = BoardLocation {
+                        coords,
                         state: LocationState::Occupied,
                         piece: Some(Rc::clone(&player2_board[i * 8 + j])),
-                    });
+                        white_attackable: false,
+                        black_attackable: false,
+                    };
+
+                    board[i].push(board_location);
                 } else if (2..6).contains(&i) {
                     board[i].push(BoardLocation {
-                        coords: LocationCoords { x: j, y: i },
+                        coords,
                         state: LocationState::Empty,
                         piece: None,
+                        white_attackable: false,
+                        black_attackable: false,
                     });
                 } else {
+                    let mut piece_location = player1_board[(i - 6) * 8 + j].location.borrow_mut();
+                    *piece_location = Some(Rc::clone(&coords));
+
                     board[i].push(BoardLocation {
-                        coords: LocationCoords { x: j, y: i },
+                        coords,
                         state: LocationState::Occupied,
-                        piece: Some(Rc::clone(&player1.pieces.borrow()[(i - 6) * 8 + j])),
+                        piece: Some(Rc::clone(&player1_board[(i - 6) * 8 + j])),
+                        white_attackable: false,
+                        black_attackable: false,
                     });
                 }
             }
@@ -56,6 +76,7 @@ impl Game {
         player2_board.swap(3, 4);
         player2_board.reverse();
         drop(player2_board);
+        drop(player1_board);
 
         let current_player = Rc::clone(&player1);
 
@@ -142,6 +163,9 @@ impl Game {
                                     }
 
                                     if found_destroyed {
+                                        let mut dead_piece_location = o.location.borrow_mut();
+                                        *dead_piece_location = None;
+
                                         dead_board
                                             .push(owner_board.swap_remove(destroyed as usize));
                                     } else {
@@ -171,23 +195,27 @@ impl Game {
         }
 
         if successful_move {
+            let dest_loc = &mut self.board[dest.y][dest.x];
+
             // Set has_moved to true if this is the first time a piece has moved.
             if let Some(p) = piece_clone.clone() {
                 let mut has_moved = p.has_moved.borrow_mut();
                 if !*has_moved {
                     *has_moved = true;
                 }
+
+                let mut piece_location = p.location.borrow_mut();
+                *piece_location = Some(Rc::clone(&dest_loc.coords));
             }
+
+            // Set dest loc to moved piece.
+            dest_loc.piece = piece_clone;
+            dest_loc.state = LocationState::Occupied;
 
             // Set source board location's piece to None.
             let source_loc = &mut self.board[source.y][source.x];
             source_loc.piece = None;
             source_loc.state = LocationState::Empty;
-
-            // Set dest loc to moved piece.
-            let dest_loc = &mut self.board[dest.y][dest.x];
-            dest_loc.piece = piece_clone;
-            dest_loc.state = LocationState::Occupied;
 
             self.switch_turns();
         }
@@ -247,25 +275,6 @@ impl fmt::Display for Game {
 
         write!(f, "{}", text)
     }
-}
-
-#[derive(Debug)]
-struct BoardLocation {
-    coords: LocationCoords,
-    state: LocationState,
-    piece: Option<Rc<Piece>>,
-}
-
-#[derive(Debug)]
-pub struct LocationCoords {
-    pub x: usize,
-    pub y: usize,
-}
-
-#[derive(Debug)]
-enum LocationState {
-    Empty,
-    Occupied,
 }
 
 fn get_move_vector(source: &LocationCoords, dest: &LocationCoords) -> (i32, i32) {
