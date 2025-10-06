@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::piece::{Piece, PieceType};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Color {
     Black,
     White,

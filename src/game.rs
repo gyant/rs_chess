@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Game {
-    board: Vec<Vec<BoardLocation>>,
+    pub board: Vec<Vec<BoardLocation>>,
     pub player1: Rc<Player>,
     pub player2: Rc<Player>,
     pub current_player: Rc<Player>,
@@ -121,7 +121,11 @@ impl Game {
                         PieceType::Knight => (),
                         _ => {
                             // Collisions apply to all other pieces
-                            let intermediate_coords = points_along_vector(&source, &move_vec);
+                            let intermediate_coords = points_along_vector(
+                                &source,
+                                &move_vec,
+                                GatherPointsMode::Exclusive,
+                            );
 
                             for coord in intermediate_coords {
                                 if let LocationState::Occupied = self.board[coord.y][coord.x].state
@@ -228,6 +232,82 @@ impl Game {
             self.current_player = Rc::clone(&self.player1);
         }
     }
+
+    // Generates white_attackable / black_attackable fields for check / victory condition checks.
+    // TODO: Implement rules for other pieces including function to get vec to edge of board from
+    // source location.
+    pub fn generate_attack_map(&mut self, player: &Player) {
+        for piece in player.pieces.borrow().iter() {
+            match piece.piece_type {
+                PieceType::Pawn => {
+                    let attack_vecs: Vec<(i32, i32)> = vec![
+                        (1, 1 * player.pawn_direction),
+                        (-1, 1 * player.pawn_direction),
+                    ];
+
+                    self.set_attack_flags(&piece, &attack_vecs);
+                }
+                _ => (),
+            }
+        }
+    }
+
+    fn set_attack_flags(&mut self, piece: &Piece, attack_vecs: &Vec<(i32, i32)>) {
+        if let Some(source) = piece.location.borrow().as_ref() {
+            for attack in attack_vecs {
+                let attack_points =
+                    points_along_vector(&source, &attack, GatherPointsMode::Inclusive);
+
+                for point in attack_points {
+                    let location = &mut self.board[point.y][point.x];
+                    let mut attackable: bool = false;
+
+                    match location.state {
+                        LocationState::Empty => {
+                            attackable = true;
+                        }
+                        LocationState::Occupied => {
+                            // if friendly do nothing. If enemy populate attack map.
+                            if let Some(other_piece) = &location.piece {
+                                if other_piece.owner.color != piece.owner.color {
+                                    attackable = true;
+                                } else {
+                                    // Friendly collision detected. Exit loop.
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if attackable {
+                        match piece.owner.color {
+                            Color::White => {
+                                location.white_attackable = true;
+                            }
+                            Color::Black => {
+                                location.black_attackable = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn clear_attack_map(&mut self, player: &Player) {
+        for row in &mut self.board {
+            for column in row {
+                match player.color {
+                    Color::White => {
+                        column.white_attackable = false;
+                    }
+                    Color::Black => {
+                        column.black_attackable = false;
+                    }
+                }
+            }
+        }
+    }
 }
 
 impl fmt::Display for Game {
@@ -284,7 +364,17 @@ fn get_move_vector(source: &LocationCoords, dest: &LocationCoords) -> (i32, i32)
     )
 }
 
-pub fn points_along_vector(source: &LocationCoords, move_vec: &(i32, i32)) -> Vec<LocationCoords> {
+// Mode set for regular moves vs attack map (check / victory conditions)
+pub enum GatherPointsMode {
+    Exclusive,
+    Inclusive,
+}
+
+pub fn points_along_vector(
+    source: &LocationCoords,
+    move_vec: &(i32, i32),
+    mode: GatherPointsMode,
+) -> Vec<LocationCoords> {
     let gcd = gcd(
         move_vec.0.abs().try_into().unwrap(),
         move_vec.1.abs().try_into().unwrap(),
@@ -295,14 +385,27 @@ pub fn points_along_vector(source: &LocationCoords, move_vec: &(i32, i32)) -> Ve
 
     let mut points: Vec<LocationCoords> = vec![];
 
+    // Game already checks if target spot contains enemy.
+    //
+    // Exclusive mode returns all points between source and target to check for collisions on path.
+    // Inclusive mode includes target for attack_map population.
+    let mode_operation: usize = match mode {
+        GatherPointsMode::Exclusive => gcd,
+        GatherPointsMode::Inclusive => gcd + 1,
+    };
+
     // Ensure we're getting the locations in between source and dest exclusively.
-    for k in 1..gcd {
+    for k in 1..mode_operation {
         let x = source.x as i32 + k as i32 * step_x;
         let y = source.y as i32 + k as i32 * step_y;
-        points.push(LocationCoords {
-            x: x as usize,
-            y: y as usize,
-        });
+
+        // Ensure any point returned is in the bounds of the board
+        if (x >= 0 && x <= 7) && (y >= 0 && y <= 7) {
+            points.push(LocationCoords {
+                x: x as usize,
+                y: y as usize,
+            });
+        }
     }
 
     points
