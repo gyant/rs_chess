@@ -234,29 +234,162 @@ impl Game {
     }
 
     // Generates white_attackable / black_attackable fields for check / victory condition checks.
-    // TODO: Implement rules for other pieces including function to get vec to edge of board from
-    // source location.
     pub fn generate_attack_map(&mut self, player: &Player) {
         for piece in player.pieces.borrow().iter() {
             match piece.piece_type {
                 PieceType::Pawn => {
-                    let attack_vecs: Vec<(i32, i32)> = vec![
+                    let attack_unit_vecs: Vec<(i32, i32)> = vec![
                         (1, 1 * player.pawn_direction),
                         (-1, 1 * player.pawn_direction),
                     ];
+                    let attack_vecs: Vec<(i32, i32)> =
+                        self.get_attack_vecs_in_bounds(&piece, attack_unit_vecs);
 
                     self.set_attack_flags(&piece, &attack_vecs);
                 }
-                _ => (),
+                PieceType::Rook => {
+                    let attack_unit_vecs: Vec<(i32, i32)> = vec![(1, 0), (-1, 0), (0, 1), (0, -1)];
+                    let attack_vecs: Vec<(i32, i32)> =
+                        self.get_attack_vecs_to_edge(&piece, attack_unit_vecs);
+                    self.set_attack_flags(&piece, &attack_vecs);
+                }
+                PieceType::Knight => {
+                    let attack_unit_vecs: Vec<(i32, i32)> = vec![
+                        (2, 1),
+                        (2, -1),
+                        (-2, 1),
+                        (-2, -1),
+                        (1, 2),
+                        (1, -2),
+                        (-1, 2),
+                        (-1, -2),
+                    ];
+                    let attack_vecs: Vec<(i32, i32)> =
+                        self.get_attack_vecs_in_bounds(&piece, attack_unit_vecs);
+                    self.set_attack_flags(&piece, &attack_vecs);
+                }
+                PieceType::Bishop => {
+                    let attack_unit_vecs: Vec<(i32, i32)> =
+                        vec![(1, 1), (1, -1), (-1, 1), (-1, -1)];
+                    let attack_vecs: Vec<(i32, i32)> =
+                        self.get_attack_vecs_to_edge(&piece, attack_unit_vecs);
+                    self.set_attack_flags(&piece, &attack_vecs);
+                }
+                PieceType::Queen => {
+                    let attack_unit_vecs: Vec<(i32, i32)> = vec![
+                        (1, 1),
+                        (1, -1),
+                        (-1, 1),
+                        (-1, -1),
+                        (1, 0),
+                        (-1, 0),
+                        (0, 1),
+                        (0, -1),
+                    ];
+                    let attack_vecs: Vec<(i32, i32)> =
+                        self.get_attack_vecs_to_edge(&piece, attack_unit_vecs);
+                    self.set_attack_flags(&piece, &attack_vecs);
+                }
+                PieceType::King => {
+                    let attack_unit_vecs: Vec<(i32, i32)> = vec![
+                        (1, 1),
+                        (1, -1),
+                        (-1, 1),
+                        (-1, -1),
+                        (0, 1),
+                        (0, -1),
+                        (1, 0),
+                        (-1, 0),
+                    ];
+                    let attack_vecs = self.get_attack_vecs_in_bounds(&piece, attack_unit_vecs);
+                    self.set_attack_flags(&piece, &attack_vecs);
+                }
             }
         }
+    }
+
+    // Used for pawn / knight / king attack map population
+    fn get_attack_vecs_in_bounds(
+        &self,
+        piece: &Piece,
+        attack_vecs: Vec<(i32, i32)>,
+    ) -> Vec<(i32, i32)> {
+        let mut vecs_inbounds: Vec<(i32, i32)> = vec![];
+
+        if let Some(location) = piece.location.borrow().as_ref() {
+            for attack_vec in attack_vecs {
+                let dx = attack_vec.0;
+                let dy = attack_vec.1;
+
+                if dx == 0 && dy == 0 {
+                    continue;
+                }
+
+                let temp_vec = (location.x as i32 + dx, location.y as i32 + dy);
+
+                if temp_vec.0 >= 0 && temp_vec.0 <= 7 && temp_vec.1 >= 0 && temp_vec.1 <= 7 {
+                    vecs_inbounds.push(attack_vec);
+                }
+            }
+        }
+
+        vecs_inbounds
+    }
+
+    // Used for Rook / Bishop / Queen attack map population
+    fn get_attack_vecs_to_edge(
+        &self,
+        piece: &Piece,
+        attack_vecs: Vec<(i32, i32)>,
+    ) -> Vec<(i32, i32)> {
+        let mut vecs_to_edge: Vec<(i32, i32)> = vec![];
+
+        if let Some(location) = piece.location.borrow().as_ref() {
+            for attack_vec in attack_vecs {
+                let dx = attack_vec.0;
+                let dy = attack_vec.1;
+
+                if dx == 0 && dy == 0 {
+                    continue;
+                }
+
+                let mut curr_x = location.x as i32 + dx;
+                let mut curr_y = location.y as i32 + dy;
+                let mut last_valid: Option<(i32, i32)> = None;
+
+                while curr_x >= 0 && curr_x <= 7 && curr_y >= 0 && curr_y <= 7 {
+                    last_valid = Some((curr_x, curr_y));
+                    curr_x += dx;
+                    curr_y += dy;
+                }
+
+                if let Some(point_of_edge) = last_valid {
+                    vecs_to_edge.push((
+                        point_of_edge.0 - location.x as i32,
+                        point_of_edge.1 - location.y as i32,
+                    ));
+                }
+            }
+        }
+
+        vecs_to_edge
     }
 
     fn set_attack_flags(&mut self, piece: &Piece, attack_vecs: &Vec<(i32, i32)>) {
         if let Some(source) = piece.location.borrow().as_ref() {
             for attack in attack_vecs {
-                let attack_points =
-                    points_along_vector(&source, &attack, GatherPointsMode::Inclusive);
+                let attack_points = match piece.piece_type {
+                    // Knight is special due to mad hops.
+                    PieceType::Knight => {
+                        vec![LocationCoords {
+                            x: <i32 as TryInto<usize>>::try_into(source.x as i32 + attack.0)
+                                .unwrap(),
+                            y: <i32 as TryInto<usize>>::try_into(source.y as i32 + attack.1)
+                                .unwrap(),
+                        }]
+                    }
+                    _ => points_along_vector(&source, &attack, GatherPointsMode::Inclusive),
+                };
 
                 for point in attack_points {
                     let location = &mut self.board[point.y][point.x];
