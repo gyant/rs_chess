@@ -96,6 +96,18 @@ impl Game {
         let mut successful_move = false;
         let mut piece_clone: Option<Rc<Piece>> = None;
 
+        // Generate attack map for opponent
+        match self.current_player.color {
+            Color::Black => {
+                self.clear_attack_map(Rc::clone(&self.player1));
+                self.generate_attack_map(Rc::clone(&self.player1));
+            }
+            Color::White => {
+                self.clear_attack_map(Rc::clone(&self.player2));
+                self.generate_attack_map(Rc::clone(&self.player2));
+            }
+        }
+
         // Check bounds
         if dest.x > 7 || dest.y > 7 {
             println!("Destination out of bounds");
@@ -184,6 +196,29 @@ impl Game {
                                 println!("NOT A VALID MOVE FOR {:?}", piece);
                                 return;
                             }
+
+                            match piece.piece_type {
+                                PieceType::King => {
+                                    // Check for check
+                                    let dest_loc = &self.board[dest.y][dest.x];
+
+                                    match self.current_player.color {
+                                        Color::Black => {
+                                            if dest_loc.white_attackable {
+                                                println!("CANNOT MOVE KING INTO CHECK");
+                                                return;
+                                            }
+                                        }
+                                        Color::White => {
+                                            if dest_loc.black_attackable {
+                                                println!("CANNOT MOVE KING INTO CHECK");
+                                                return;
+                                            }
+                                        }
+                                    }
+                                }
+                                _ => (),
+                            }
                         }
                     }
 
@@ -221,6 +256,8 @@ impl Game {
             source_loc.piece = None;
             source_loc.state = LocationState::Empty;
 
+            // TODO: Check for victory.
+
             self.switch_turns();
         }
     }
@@ -234,7 +271,7 @@ impl Game {
     }
 
     // Generates white_attackable / black_attackable fields for check / victory condition checks.
-    pub fn generate_attack_map(&mut self, player: &Player) {
+    pub fn generate_attack_map(&mut self, player: Rc<Player>) {
         for piece in player.pieces.borrow().iter() {
             match piece.piece_type {
                 PieceType::Pawn => {
@@ -427,7 +464,7 @@ impl Game {
         }
     }
 
-    fn clear_attack_map(&mut self, player: &Player) {
+    fn clear_attack_map(&mut self, player: Rc<Player>) {
         for row in &mut self.board {
             for column in row {
                 match player.color {
