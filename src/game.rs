@@ -126,6 +126,14 @@ impl Game {
                         return;
                     }
 
+                    // Check for check
+                    if let Some(king) = piece.owner.king.borrow().as_ref() {
+                        if self.king_check_checker(&king) {
+                            println!("KING IS IN CHECK YOU CANNOT MOVE OTHER PIECES");
+                            return;
+                        }
+                    }
+
                     let move_vec: (i32, i32) = get_move_vector(&source, &dest);
 
                     // Check intermediate collisions
@@ -343,6 +351,29 @@ impl Game {
                 }
             }
         }
+    }
+
+    // Checks if king is in check based on current state of attack map of opponent
+    fn king_check_checker(&self, king: &Piece) -> bool {
+        let mut is_in_check: bool = false;
+
+        if let Some(king_coords) = king.location.borrow().as_ref() {
+            let board_location = self.get_loc_cartesian(&king_coords);
+            match king.owner.color {
+                Color::Black => {
+                    if board_location.white_attackable {
+                        is_in_check = true;
+                    }
+                }
+                Color::White => {
+                    if board_location.black_attackable {
+                        is_in_check = true;
+                    }
+                }
+            }
+        }
+
+        is_in_check
     }
 
     // Used for pawn / knight / king attack map population
