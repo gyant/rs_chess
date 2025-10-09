@@ -11,6 +11,7 @@ pub struct Game {
     pub player1: Rc<Player>,
     pub player2: Rc<Player>,
     pub current_player: Rc<Player>,
+    game_over: bool,
 }
 
 impl Game {
@@ -85,6 +86,7 @@ impl Game {
             player1,
             player2,
             current_player,
+            game_over: false,
         }
     }
 
@@ -93,6 +95,11 @@ impl Game {
     }
 
     pub fn move_piece(&mut self, source: LocationCoords, dest: LocationCoords) {
+        if self.game_over {
+            println!("Game is over, no more moves can be made");
+            return;
+        }
+
         let mut successful_move = false;
         let mut piece_clone: Option<Rc<Piece>> = None;
 
@@ -264,9 +271,40 @@ impl Game {
             source_loc.piece = None;
             source_loc.state = LocationState::Empty;
 
-            // TODO: Check for victory.
+            // Check for victory.
+            let mut victory = false;
+            self.generate_attack_map(Rc::clone(&self.current_player));
 
-            self.switch_turns();
+            match self.current_player.color {
+                Color::Black => {
+                    if let Some(enemy_king) = self.player1.king.borrow().as_ref() {
+                        if self.king_check_checker(&enemy_king) {
+                            if self.king_checkmate_checker(&enemy_king) {
+                                victory = true;
+                            }
+                        }
+                    }
+                }
+                Color::White => {
+                    if let Some(enemy_king) = self.player2.king.borrow().as_ref() {
+                        if self.king_check_checker(&enemy_king) {
+                            if self.king_checkmate_checker(&enemy_king) {
+                                victory = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if victory {
+                println!(
+                    "WINNER! {} has put the enemy in checkmate!",
+                    &self.current_player.name
+                );
+                self.game_over = true;
+            } else {
+                self.switch_turns();
+            }
         }
     }
 
@@ -283,74 +321,134 @@ impl Game {
         for piece in player.pieces.borrow().iter() {
             match piece.piece_type {
                 PieceType::Pawn => {
-                    let attack_unit_vecs: Vec<(i32, i32)> = vec![
-                        (1, 1 * player.pawn_direction),
-                        (-1, 1 * player.pawn_direction),
-                    ];
+                    let attack_unit_vecs: Vec<(i32, i32)> = self.get_piece_attack_vecs(&piece);
                     let attack_vecs: Vec<(i32, i32)> =
                         self.get_attack_vecs_in_bounds(&piece, attack_unit_vecs);
 
                     self.set_attack_flags(&piece, &attack_vecs);
                 }
                 PieceType::Rook => {
-                    let attack_unit_vecs: Vec<(i32, i32)> = vec![(1, 0), (-1, 0), (0, 1), (0, -1)];
+                    let attack_unit_vecs: Vec<(i32, i32)> = self.get_piece_attack_vecs(&piece);
                     let attack_vecs: Vec<(i32, i32)> =
                         self.get_attack_vecs_to_edge(&piece, attack_unit_vecs);
                     self.set_attack_flags(&piece, &attack_vecs);
                 }
                 PieceType::Knight => {
-                    let attack_unit_vecs: Vec<(i32, i32)> = vec![
-                        (2, 1),
-                        (2, -1),
-                        (-2, 1),
-                        (-2, -1),
-                        (1, 2),
-                        (1, -2),
-                        (-1, 2),
-                        (-1, -2),
-                    ];
+                    let attack_unit_vecs: Vec<(i32, i32)> = self.get_piece_attack_vecs(&piece);
                     let attack_vecs: Vec<(i32, i32)> =
                         self.get_attack_vecs_in_bounds(&piece, attack_unit_vecs);
                     self.set_attack_flags(&piece, &attack_vecs);
                 }
                 PieceType::Bishop => {
-                    let attack_unit_vecs: Vec<(i32, i32)> =
-                        vec![(1, 1), (1, -1), (-1, 1), (-1, -1)];
+                    let attack_unit_vecs: Vec<(i32, i32)> = self.get_piece_attack_vecs(&piece);
                     let attack_vecs: Vec<(i32, i32)> =
                         self.get_attack_vecs_to_edge(&piece, attack_unit_vecs);
                     self.set_attack_flags(&piece, &attack_vecs);
                 }
                 PieceType::Queen => {
-                    let attack_unit_vecs: Vec<(i32, i32)> = vec![
-                        (1, 1),
-                        (1, -1),
-                        (-1, 1),
-                        (-1, -1),
-                        (1, 0),
-                        (-1, 0),
-                        (0, 1),
-                        (0, -1),
-                    ];
+                    let attack_unit_vecs: Vec<(i32, i32)> = self.get_piece_attack_vecs(&piece);
                     let attack_vecs: Vec<(i32, i32)> =
                         self.get_attack_vecs_to_edge(&piece, attack_unit_vecs);
                     self.set_attack_flags(&piece, &attack_vecs);
                 }
                 PieceType::King => {
-                    let attack_unit_vecs: Vec<(i32, i32)> = vec![
-                        (1, 1),
-                        (1, -1),
-                        (-1, 1),
-                        (-1, -1),
-                        (0, 1),
-                        (0, -1),
-                        (1, 0),
-                        (-1, 0),
-                    ];
+                    let attack_unit_vecs: Vec<(i32, i32)> = self.get_piece_attack_vecs(&piece);
                     let attack_vecs = self.get_attack_vecs_in_bounds(&piece, attack_unit_vecs);
                     self.set_attack_flags(&piece, &attack_vecs);
                 }
             }
         }
+    }
+
+    fn get_piece_attack_vecs(&self, piece: &Piece) -> Vec<(i32, i32)> {
+        match piece.piece_type {
+            PieceType::Pawn => {
+                vec![
+                    (1, 1 * piece.owner.pawn_direction),
+                    (-1, 1 * piece.owner.pawn_direction),
+                ]
+            }
+            PieceType::Rook => {
+                vec![(1, 0), (-1, 0), (0, 1), (0, -1)]
+            }
+            PieceType::Knight => {
+                vec![
+                    (2, 1),
+                    (2, -1),
+                    (-2, 1),
+                    (-2, -1),
+                    (1, 2),
+                    (1, -2),
+                    (-1, 2),
+                    (-1, -2),
+                ]
+            }
+            PieceType::Bishop => {
+                vec![(1, 1), (1, -1), (-1, 1), (-1, -1)]
+            }
+            PieceType::Queen => {
+                vec![
+                    (1, 1),
+                    (1, -1),
+                    (-1, 1),
+                    (-1, -1),
+                    (1, 0),
+                    (-1, 0),
+                    (0, 1),
+                    (0, -1),
+                ]
+            }
+            PieceType::King => {
+                vec![
+                    (1, 1),
+                    (1, -1),
+                    (-1, 1),
+                    (-1, -1),
+                    (0, 1),
+                    (0, -1),
+                    (1, 0),
+                    (-1, 0),
+                ]
+            }
+        }
+    }
+
+    fn king_checkmate_checker(&self, king: &Piece) -> bool {
+        // attack vecs can be used in general for potential moves
+        let unit_attack_vecs = self.get_piece_attack_vecs(&king);
+        let attack_vecs = self.get_attack_vecs_in_bounds(&king, unit_attack_vecs);
+        let mut checkmate: bool = true;
+
+        for vec in attack_vecs {
+            if let Some(king_coords) = king.location.borrow().as_ref() {
+                let location = points_along_vector(&king_coords, &vec, GatherPointsMode::Inclusive);
+                let board_loc = self.get_loc_cartesian(&location[0]);
+
+                match board_loc.state {
+                    LocationState::Occupied => {
+                        continue;
+                    }
+                    LocationState::Empty => {
+                        match king.owner.color {
+                            Color::Black => {
+                                if !board_loc.white_attackable {
+                                    checkmate = false;
+                                    break;
+                                }
+                            }
+                            Color::White => {
+                                //do stuff
+                                if !board_loc.black_attackable {
+                                    checkmate = false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        checkmate
     }
 
     // Checks if king is in check based on current state of attack map of opponent
